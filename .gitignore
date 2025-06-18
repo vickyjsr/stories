@@ -31,6 +31,10 @@ bower_components
 .env.test.local
 .env.production.local
 
+# Firebase configuration (contains sensitive API keys)
+firebase-config.js
+public/firebase-config.js
+
 # Firebase
 .firebase/
 firebase-debug.log
