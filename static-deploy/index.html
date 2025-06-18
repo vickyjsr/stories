@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grievance Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getStorage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        
+        // Firebase configuration (you'll need to replace with your config)
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+        
+        // Initialize Firebase
+        window.firebase = {
+            app: initializeApp(firebaseConfig),
+            db: getFirestore(),
+            storage: getStorage()
+        };
+    </script>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="emoji-float">🌸</div>
+        <div class="emoji-float">💖</div>
+        <div class="emoji-float">🎀</div>
+        <div class="emoji-float">🦋</div>
+        <div class="emoji-float">✨</div>
+        <div class="emoji-float">🌺</div>
+        <div class="emoji-float">💫</div>
+        <div class="emoji-float">🌸</div>
+        <div class="emoji-float">💕</div>
+        <div class="emoji-float">🎈</div>
+    </div>
+
+    <!-- Passcode Screen -->
+    <div id="passcodeScreen" class="screen active">
+        <div class="container">
+            <div class="passcode-card">
+                <div class="card-header">
+                    <i class="fas fa-lock"></i>
+                    <h1>Grievance Portal</h1>
+                    <p>Enter passcode to access</p>
+                </div>
+                <form id="passcodeForm">
+                    <div class="input-group">
+                        <input type="password" id="passcodeInput" placeholder="Enter passcode" required>
+                        <button type="submit">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="error-message" id="passcodeError"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="mainScreen" class="screen">
+        <div class="container">
+            <!-- Header -->
+            <header class="app-header">
+                <h1><i class="fas fa-clipboard-list"></i> Grievance Portal</h1>
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </header>
+
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button class="tab-btn active" data-tab="submit">
+                    <i class="fas fa-plus-circle"></i> Submit Grievance
+                </button>
+                <button class="tab-btn" data-tab="view">
+                    <i class="fas fa-list"></i> View Grievances
+                </button>
+            </div>
+
+            <!-- Submit Grievance Tab -->
+            <div id="submitTab" class="tab-content active">
+                <div class="form-card">
+                    <h2><i class="fas fa-edit"></i> Submit New Grievance</h2>
+                    <form id="grievanceForm">
+                        <div class="input-group">
+                            <label for="title"><i class="fas fa-heading"></i> Title *</label>
+                            <input type="text" id="title" name="title" placeholder="Enter grievance title" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="description"><i class="fas fa-align-left"></i> Description *</label>
+                            <textarea id="description" name="description" rows="5" placeholder="Describe your grievance in detail..." required></textarea>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="photo"><i class="fas fa-camera"></i> Photo (Optional)</label>
+                            <div class="file-upload">
+                                <input type="file" id="photo" name="photo" accept="image/*">
+                                <div class="file-upload-content">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag & drop</span>
+                                    <small>Max file size: 5MB</small>
+                                </div>
+                                <div class="file-preview" id="filePreview"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-paper-plane"></i> Submit Grievance
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- View Grievances Tab -->
+            <div id="viewTab" class="tab-content">
+                <div class="grievances-container">
+                    <h2><i class="fas fa-list"></i> All Grievances</h2>
+                    <div class="grievances-list" id="grievancesList">
+                        <!-- Grievances will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-check-circle"></i>
+                <h3>Success!</h3>
+            </div>
+            <p>Your grievance has been submitted successfully!</p>
+            <button class="modal-btn" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read and write access to stories collection
+    match /stories/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow read and write access to auth collection for passcode (legacy)
+    match /auth/{document} {
+      allow read, write: if true;
+    }
+    
+    // Allow read access to passcodes collection for validation
+    // Temporarily allow write access for initialization
+    match /passcodes/{document} {
+      allow read, write: if true; // Temporarily allow writes for initialization
+      // After initialization, change to: allow read: if true; allow write: if false;
+    }
+  }
+} 
