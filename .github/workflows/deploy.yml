@@ -33,6 +33,21 @@ jobs:
       - name: Install dependencies
         run: npm install
         
+      - name: Verify Firebase secrets are set
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          if [ -z "$FIREBASE_API_KEY" ]; then
+            echo "❌ FIREBASE_API_KEY is not set!"
+            exit 1
+          fi
+          if [ -z "$FIREBASE_PROJECT_ID" ]; then
+            echo "❌ FIREBASE_PROJECT_ID is not set!"
+            exit 1
+          fi
+          echo "✅ Firebase secrets are properly configured"
+          
       - name: Create Firebase config from environment variables
         env:
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
@@ -55,6 +70,7 @@ jobs:
               appId: "$FIREBASE_APP_ID"
           };
           EOF
+          echo "✅ Firebase config generated successfully"
           
       - name: Setup Pages
         uses: actions/configure-pages@v5
