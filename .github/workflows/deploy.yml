@@ -31,7 +31,7 @@ jobs:
           node-version: '18'
           
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         
       - name: Create Firebase config from environment variables
         env:
