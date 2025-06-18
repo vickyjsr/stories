@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Life Stories</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        // Storage not needed for base64 approach
+        
+        // Firebase configuration (replace with your actual config from Firebase Console)
+        const firebaseConfig = {
+                apiKey: "AIzaSyAfZpNICEFxt3hu7lqqIYJ2_nwZL53SREQ",
+                authDomain: "conferenceapp-5753e.firebaseapp.com",
+                databaseURL: "https://conferenceapp-5753e-default-rtdb.firebaseio.com",
+                projectId: "conferenceapp-5753e",
+                storageBucket: "conferenceapp-5753e.appspot.com",
+                messagingSenderId: "103272708165",
+                appId: "1:103272708165:web:81277dab16670af5c90b2c"
+            };
+        
+        // IMPORTANT: Replace the above values with your actual Firebase configuration
+        // You can find these values in Firebase Console > Project Settings > Your apps
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        window.firebase = {
+            app: app,
+            db: getFirestore(app)
+            // No storage needed - using base64 in Firestore
+        };
+    </script>
+</head>
+<body>
+    <!-- Scrapbook Decorative Background -->
+    <div class="animated-bg">
+        <div class="emoji-float">📸</div>
+        <div class="emoji-float">💕</div>
+        <div class="emoji-float">✨</div>
+        <div class="emoji-float">🌟</div>
+        <div class="emoji-float">💫</div>
+        <div class="emoji-float">🎀</div>
+        <div class="emoji-float">💖</div>
+        <div class="emoji-float">🌸</div>
+        <div class="emoji-float">📝</div>
+        <div class="emoji-float">🦋</div>
+        
+        <!-- Decorative corner stickers -->
+        <div class="corner-sticker top-left">🌺</div>
+        <div class="corner-sticker top-right">💝</div>
+        <div class="corner-sticker bottom-left">🎨</div>
+        <div class="corner-sticker bottom-right">📷</div>
+        
+        <!-- Floating polaroids -->
+        <div class="floating-polaroid" style="top: 15%; left: 5%; transform: rotate(-15deg);">📷</div>
+        <div class="floating-polaroid" style="top: 70%; right: 8%; transform: rotate(12deg);">🖼️</div>
+        <div class="floating-polaroid" style="top: 40%; left: 85%; transform: rotate(-8deg);">📸</div>
+    </div>
+
+    <!-- Passcode Screen -->
+    <div id="passcodeScreen" class="screen active">
+        <div class="container">
+            <div class="passcode-card">
+                <div class="card-header">
+                    <i class="fas fa-heart"></i>
+                    <h1>Our Life Stories</h1>
+                    <p>Enter our secret code to share memories 💖</p>
+                </div>
+                <form id="passcodeForm">
+                    <div class="input-group">
+                        <input type="password" id="passcodeInput" placeholder="Enter passcode" required>
+                        <button type="submit">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="error-message" id="passcodeError"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="mainScreen" class="screen">
+        <div class="container">
+            <!-- Header -->
+            <header class="app-header">
+                <h1><i class="fas fa-heart"></i> Our Life Stories</h1>
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </header>
+
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button class="tab-btn active" data-tab="submit">
+                    <i class="fas fa-plus-circle"></i> Share Story
+                </button>
+                <button class="tab-btn" data-tab="view">
+                    <i class="fas fa-book-heart"></i> Our Memories
+                </button>
+            </div>
+
+            <!-- Share Story Tab -->
+            <div id="submitTab" class="tab-content active">
+                <div class="form-card">
+                    <h2><i class="fas fa-heart"></i> Share a Life Story</h2>
+                    <form id="storyForm">
+                        <div class="input-group">
+                            <label for="title"><i class="fas fa-sparkles"></i> Story Title *</label>
+                            <input type="text" id="title" name="title" placeholder="What's this beautiful moment about? ✨" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="description"><i class="fas fa-heart"></i> Tell Your Story *</label>
+                            <textarea id="description" name="description" rows="5" placeholder="Share this precious memory... What happened? How did it make you feel? 💕" required></textarea>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="photo"><i class="fas fa-camera-retro"></i> Add a Photo (Optional)</label>
+                            <div class="file-upload">
+                                <input type="file" id="photo" name="photo" accept="image/*">
+                                <div class="file-upload-content">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Upload a memory photo 📸</span>
+                                    <small>Max file size: 3MB - Perfect for your precious moments!</small>
+                                </div>
+                                <div class="file-preview" id="filePreview"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-heart"></i> Share This Memory
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- View Memories Tab -->
+            <div id="viewTab" class="tab-content">
+                <div class="stories-container">
+                    <h2><i class="fas fa-book-heart"></i> Our Beautiful Memories</h2>
+                    <div class="stories-list" id="storiesList">
+                        <!-- Stories will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-heart"></i>
+                <h3>Memory Shared! 💕</h3>
+            </div>
+            <p>Your beautiful story has been shared successfully! Your bestie will love it! ✨</p>
+            <button class="modal-btn" onclick="closeModal()">Aww, thanks! 💖</button>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <script src="script-static.js"></script>
+</body>
+</html>
