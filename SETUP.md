@@ -1,14 +1,83 @@
-# 🔧 Firebase Setup Guide
+# 🚀 Environment Variables & GitHub Pages Deployment Guide
 
 ## 🚨 Security Notice
-This project now uses secure Firebase configuration to prevent API key exposure in version control.
+This project uses secure environment-based Firebase configuration to prevent API key exposure in version control.
 
-## 📋 Setup Steps
+## 🏠 Local Development Setup
 
-### 1. Create Firebase Configuration File
-1. Copy the template: `cp public/firebase-config.template.js public/firebase-config.js`
-2. Edit `public/firebase-config.js` with your actual Firebase values
-3. Get your Firebase config from [Firebase Console](https://console.firebase.google.com) > Project Settings > Your apps
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+### 2. Set Up Environment Variables
+Create a `.env` file in the root directory:
+```bash
+# Copy the example and edit with your values
+cp .env.example .env
+```
+
+Add your Firebase configuration to `.env`:
+```env
+FIREBASE_API_KEY=your_actual_api_key
+FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=123456789
+FIREBASE_APP_ID=1:123456789:web:your-app-id
+```
+
+### 3. Build Configuration
+```bash
+# Generate Firebase config from environment variables
+npm run build:dev
+
+# Or for production (uses system environment variables)
+npm run build
+```
+
+### 4. Run Locally
+```bash
+# Start the Express server
+npm start
+
+# Or for development with auto-reload
+npm run dev
+
+# Or serve static files only
+npm run serve
+```
+
+## 🌐 GitHub Pages Deployment
+
+### 1. Enable GitHub Pages
+1. Go to your repository on GitHub
+2. Settings → Pages
+3. Source: **GitHub Actions**
+4. Save
+
+### 2. Set Up GitHub Secrets
+Go to your repository → Settings → Secrets and variables → Actions
+
+Add these Repository Secrets:
+- `FIREBASE_API_KEY` = Your Firebase API key
+- `FIREBASE_AUTH_DOMAIN` = your-project.firebaseapp.com  
+- `FIREBASE_DATABASE_URL` = https://your-project-default-rtdb.firebaseio.com
+- `FIREBASE_PROJECT_ID` = your-project-id
+- `FIREBASE_STORAGE_BUCKET` = your-project.appspot.com
+- `FIREBASE_MESSAGING_SENDER_ID` = Your messaging sender ID
+- `FIREBASE_APP_ID` = Your Firebase app ID
+
+### 3. Deploy
+Push to the `main` branch - GitHub Actions will automatically:
+1. Build the site with your secrets
+2. Generate the Firebase config
+3. Deploy to GitHub Pages
+
+Your site will be available at: `https://username.github.io/repository-name`
+
+## 📋 Firebase Configuration Steps
 
 ### 2. Firebase Configuration Values
 Replace these in `public/firebase-config.js`:
