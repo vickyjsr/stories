@@ -12,9 +12,9 @@ function generateFirebaseConfig() {
         projectId: process.env.FIREBASE_PROJECT_ID || 'your-project-id',
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'your-project.appspot.com',
         messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '123456789',
-        appId: process.env.FIREBASE_APP_ID || '1:123456789:web:your-app-id'
+        appId: process.env.FIREBASE_APP_ID || '1:123456789:web:your-app-id',
+        passcode: process.env.PASSCODE
     };
-
     const configJs = `// Firebase Configuration - Generated from environment variables
 // This file is auto-generated. Do not edit manually.
 
