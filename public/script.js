@@ -24,13 +24,10 @@ let isAuthenticated = false;
 let stories = [];
 let currentUser = null;
 
-// Firebase references
-let db, storage;
+// Firebase references are now global (window.db, window.storage)
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-    initializeFirebase(); // Initialize immediately
-
     // Check if already authenticated (simple session check)
     const isAuth = sessionStorage.getItem('authenticated');
     const userName = sessionStorage.getItem('userName');
@@ -48,19 +45,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start background animation
     animateBackground();
 });
-
-// Initialize Firebase
-function initializeFirebase() {
-    if (window.firebase && window.firebaseConfig) {
-        // Initialize Firebase
-        firebase.initializeApp(window.firebaseConfig);
-        db = firebase.firestore();
-        storage = firebase.storage();
-        console.log("Firebase initialized successfully");
-    } else {
-        console.error("Firebase config not found. Make sure firebase-config.js is loaded and configured.");
-    }
-}
 
 // Setup Event Listeners
 function setupEventListeners() {
@@ -106,6 +90,10 @@ async function handlePasscodeSubmit(e) {
 
         if (passcodeDoc.exists) {
             const user = passcodeDoc.data();
+            
+            // Sign in anonymously to Firebase for security rules
+            await auth.signInAnonymously();
+
             sessionStorage.setItem('authenticated', 'true');
             sessionStorage.setItem('userName', user.name);
             currentUser = { name: user.name };
@@ -127,6 +115,7 @@ async function handlePasscodeSubmit(e) {
 
 // Handle logout
 function handleLogout() {
+    auth.signOut(); // Sign out from Firebase
     sessionStorage.removeItem('authenticated');
     sessionStorage.removeItem('userName');
     isAuthenticated = false;
