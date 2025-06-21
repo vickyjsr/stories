@@ -8,8 +8,8 @@ const passcodeForm = document.getElementById('passcodeForm');
 const passcodeInput = document.getElementById('passcodeInput');
 const passcodeError = document.getElementById('passcodeError');
 const logoutBtn = document.getElementById('logoutBtn');
-const storyForm = document.getElementById('storyForm');
-const storiesList = document.getElementById('storiesList');
+const grievanceForm = document.getElementById('grievanceForm');
+const grievancesList = document.getElementById('grievancesList');
 const successModal = document.getElementById('successModal');
 const loadingSpinner = document.getElementById('loadingSpinner');
 const fileInput = document.getElementById('photo');
@@ -21,8 +21,7 @@ const tabContents = document.querySelectorAll('.tab-content');
 
 // State
 let isAuthenticated = false;
-let stories = [];
-let currentUser = null;
+let grievances = [];
 
 // Firebase references
 let db, storage;
@@ -31,12 +30,13 @@ let db, storage;
 document.addEventListener('DOMContentLoaded', function() {
     // Check if already authenticated (simple session check)
     const isAuth = sessionStorage.getItem('authenticated');
-    const userName = sessionStorage.getItem('userName');
-    if (isAuth === 'true' && userName) {
-        currentUser = { name: userName };
+    if (isAuth === 'true') {
         showMainScreen();
         initializeFirebase();
     }
+    
+    // Load grievances
+    loadGrievances();
     
     // Setup event listeners
     setupEventListeners();
@@ -66,8 +66,8 @@ function setupEventListeners() {
     // Logout button
     logoutBtn.addEventListener('click', handleLogout);
     
-    // Story form
-    storyForm.addEventListener('submit', handleStorySubmit);
+    // Grievance form
+    grievanceForm.addEventListener('submit', handleGrievanceSubmit);
     
     // File input
     fileInput.addEventListener('change', handleFileSelect);
@@ -78,7 +78,7 @@ function setupEventListeners() {
     });
     
     // Socket events
-    socket.on('newStory', handleNewStory);
+    socket.on('newGrievance', handleNewGrievance);
     
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -108,10 +108,8 @@ async function handlePasscodeSubmit(e) {
         
         const result = await response.json();
         
-        if (result.success && result.user) {
+        if (result.success) {
             sessionStorage.setItem('authenticated', 'true');
-            sessionStorage.setItem('userName', result.user.name);
-            currentUser = result.user;
             showMainScreen();
             initializeFirebase();
             passcodeInput.value = '';
@@ -132,21 +130,13 @@ async function handlePasscodeSubmit(e) {
 // Handle logout
 function handleLogout() {
     sessionStorage.removeItem('authenticated');
-    sessionStorage.removeItem('userName');
     isAuthenticated = false;
-    currentUser = null;
     showPasscodeScreen();
 }
 
-// Handle story submission
-async function handleStorySubmit(e) {
+// Handle grievance submission
+async function handleGrievanceSubmit(e) {
     e.preventDefault();
-    
-    if (!currentUser) {
-        alert("User not logged in. Please log in again.");
-        handleLogout();
-        return;
-    }
     
     showLoading();
 
@@ -159,7 +149,7 @@ async function handleStorySubmit(e) {
     try {
         // 1. If there's a file, upload it to Firebase Storage first
         if (file) {
-            const filePath = `Preeti/${currentUser.name}/${Date.now()}_${file.name}`;
+            const filePath = `Preeti/${Date.now()}_${file.name}`;
             const storageRef = storage.ref(filePath);
             const uploadTask = await storageRef.put(file);
             photoUrl = await uploadTask.ref.getDownloadURL();
@@ -167,7 +157,6 @@ async function handleStorySubmit(e) {
 
         // 2. Save the story data to Firestore
         await db.collection("stories").add({
-            name: currentUser.name,
             title: title,
             description: description,
             photo: photoUrl,
@@ -175,7 +164,7 @@ async function handleStorySubmit(e) {
         });
         
         // Reset form
-        storyForm.reset();
+        grievanceForm.reset();
         filePreview.innerHTML = '';
         
         // Show success modal
@@ -187,8 +176,8 @@ async function handleStorySubmit(e) {
         }, 2000);
 
     } catch (error) {
-        console.error('Story submission error:', error);
-        alert('Oops! There was an issue sharing your beautiful story: ' + error.message + ' 💔');
+        console.error('Grievance submission error:', error);
+        alert('Error submitting grievance: ' + error.message);
     } finally {
         hideLoading();
     }
@@ -227,61 +216,57 @@ function handleFileSelect(e) {
     reader.readAsDataURL(file);
 }
 
-// Handle new story from socket
-function handleNewStory(story) {
-    stories.unshift(story);
-    renderStories();
+// Handle new grievance from socket
+function handleNewGrievance(grievance) {
+    grievances.unshift(grievance);
+    renderGrievances();
     
     // Show notification if not on view tab
     if (!document.getElementById('viewTab').classList.contains('active')) {
-        showNotification('New story received!');
+        showNotification('New grievance received!');
     }
 }
 
-// Load stories from server
-async function loadStories() {
-    if (!db) {
-        console.log("Firestore not initialized, skipping loading stories.");
-        return;
-    }
+// Load grievances from server
+async function loadGrievances() {
     try {
-        const snapshot = await db.collection("stories").orderBy("timestamp", "desc").get();
-        stories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderStories();
+        const response = await fetch('/api/grievances');
+        grievances = await response.json();
+        renderGrievances();
     } catch (error) {
-        console.error('Error loading stories:', error);
+        console.error('Error loading grievances:', error);
     }
 }
 
-// Render stories
-function renderStories() {
-    if (stories.length === 0) {
-        storiesList.innerHTML = `
+// Render grievances
+function renderGrievances() {
+    if (grievances.length === 0) {
+        grievancesList.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #666;">
                 <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.5;"></i>
-                <p>No stories yet.</p>
+                <p>No grievances yet.</p>
             </div>
         `;
         return;
     }
     
-    storiesList.innerHTML = stories.map(story => `
-        <div class="story-item">
-            <div class="story-header">
-                <h3 class="story-title">${escapeHtml(story.title)}</h3>
-                <span class="story-author">by ${escapeHtml(story.name || 'Anonymous')}</span>
+    grievancesList.innerHTML = grievances.map(grievance => `
+        <div class="grievance-item">
+            <div class="grievance-header">
+                <h3 class="grievance-title">${escapeHtml(grievance.title)}</h3>
+                <span class="grievance-status">${escapeHtml(grievance.status)}</span>
             </div>
-            <div class="story-description">
-                ${escapeHtml(story.description)}
+            <div class="grievance-description">
+                ${escapeHtml(grievance.description)}
             </div>
-            ${story.photo ? `
-                <div class="story-photo">
-                    <img src="${story.photo}" alt="Story photo" onclick="showImageModal('${story.photo}')">
+            ${grievance.photo ? `
+                <div class="grievance-photo">
+                    <img src="${grievance.photo}" alt="Grievance photo" onclick="showImageModal('${grievance.photo}')">
                 </div>
             ` : ''}
-            <div class="story-meta">
-                <span><i class="fas fa-calendar"></i> ${formatDate(story.timestamp)}</span>
-                <span><i class="fas fa-clock"></i> ${formatTime(story.timestamp)}</span>
+            <div class="grievance-meta">
+                <span><i class="fas fa-calendar"></i> ${formatDate(grievance.timestamp)}</span>
+                <span><i class="fas fa-clock"></i> ${formatTime(grievance.timestamp)}</span>
             </div>
         </div>
     `).join('');
@@ -289,17 +274,17 @@ function renderStories() {
 
 // Switch tabs
 function switchTab(tabName) {
-    // Hide all tabs
-    tabContents.forEach(content => content.classList.remove('active'));
+    // Update tab buttons
     tabBtns.forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
     
-    // Show selected tab
+    // Update tab content
+    tabContents.forEach(content => content.classList.remove('active'));
     document.getElementById(`${tabName}Tab`).classList.add('active');
-    document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add('active');
     
-    // Reload stories if switching to view tab
+    // Reload grievances if switching to view tab
     if (tabName === 'view') {
-        loadStories();
+        loadGrievances();
     }
 }
 
@@ -314,7 +299,7 @@ function showMainScreen() {
     passcodeScreen.classList.remove('active');
     mainScreen.classList.add('active');
     isAuthenticated = true;
-    loadStories();
+    loadGrievances();
 }
 
 // Error handling
@@ -420,17 +405,17 @@ function escapeHtml(text) {
 }
 
 function formatDate(timestamp) {
-    if (!timestamp) return 'Just now';
-    return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US', {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
         year: 'numeric',
-        month: 'long',
+        month: 'short',
         day: 'numeric'
     });
 }
 
 function formatTime(timestamp) {
-    if (!timestamp) return '';
-    return new Date(timestamp.seconds * 1000).toLocaleTimeString('en-US', {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit'
     });
