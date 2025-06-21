@@ -21,7 +21,7 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
-    environment: github-pages
+    environment: FIREBASE_API_KEY
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -100,7 +100,7 @@ jobs:
   # Deployment job
   deploy:
     environment:
-      name: github-pages
+      name: FIREBASE_API_KEY
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
