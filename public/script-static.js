@@ -178,46 +178,6 @@ async function validatePasscode(inputPasscode) {
 }
 
 // Initialize some sample passcodes (run this once to set up the collection)
-async function initializeSamplePasscodes() {
-    try {
-        const { collection, addDoc, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-        
-        // Check if passcodes collection already has data
-        const existingPasscodes = await getDocs(collection(db, 'passcodes'));
-        if (!existingPasscodes.empty) {
-            console.log('Passcodes collection already initialized');
-            return;
-        }
-        
-        // Sample passcodes to initialize the collection
-        const samplePasscodes = [
-            {
-                userId: 'user001',
-                username: 'Gourav',
-                passcode: '2025',
-                createdAt: new Date().toISOString(),
-                isActive: true
-            },
-            {
-                userId: 'user002', 
-                username: 'Preeti',
-                passcode: '2025',
-                createdAt: new Date().toISOString(),
-                isActive: true
-            }
-        ];
-        
-        // Add sample passcodes to Firestore
-        for (const passcodeData of samplePasscodes) {
-            await addDoc(collection(db, 'passcodes'), passcodeData);
-        }
-        
-        console.log('Sample passcodes initialized successfully');
-    } catch (error) {
-        console.error('Error initializing sample passcodes:', error);
-    }
-}
-
 // Handle logout
 function handleLogout() {
     sessionStorage.removeItem('authenticated');

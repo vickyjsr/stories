@@ -23,12 +23,16 @@ const tabContents = document.querySelectorAll('.tab-content');
 let isAuthenticated = false;
 let grievances = [];
 
+// Firebase references
+let db, storage;
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     // Check if already authenticated (simple session check)
     const isAuth = sessionStorage.getItem('authenticated');
     if (isAuth === 'true') {
         showMainScreen();
+        initializeFirebase();
     }
     
     // Load grievances
@@ -40,6 +44,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start background animation
     animateBackground();
 });
+
+// Initialize Firebase
+function initializeFirebase() {
+    if (window.firebase && window.firebaseConfig) {
+        // Initialize Firebase
+        firebase.initializeApp(window.firebaseConfig);
+        db = firebase.firestore();
+        storage = firebase.storage();
+        console.log("Firebase initialized successfully");
+    } else {
+        console.error("Firebase config not found. Make sure firebase-config.js is loaded and configured.");
+    }
+}
 
 // Setup Event Listeners
 function setupEventListeners() {
@@ -94,6 +111,7 @@ async function handlePasscodeSubmit(e) {
         if (result.success) {
             sessionStorage.setItem('authenticated', 'true');
             showMainScreen();
+            initializeFirebase();
             passcodeInput.value = '';
             passcodeError.classList.remove('show');
         } else {
@@ -120,20 +138,37 @@ function handleLogout() {
 async function handleGrievanceSubmit(e) {
     e.preventDefault();
     
-    const formData = new FormData();
-    formData.append('title', document.getElementById('title').value.trim());
-    formData.append('description', document.getElementById('description').value.trim());
-    
-    if (fileInput.files[0]) {
-        formData.append('photo', fileInput.files[0]);
-    }
-    
     showLoading();
-    
+
+    const title = document.getElementById('title').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const file = fileInput.files[0];
+
+    let photoUrl = '';
+
     try {
+        // 1. If there's a file, upload it to Firebase Storage first
+        if (file) {
+            const filePath = `Preeti/${Date.now()}_${file.name}`;
+            const storageRef = storage.ref(filePath);
+            const uploadTask = await storageRef.put(file);
+            photoUrl = await uploadTask.ref.getDownloadURL();
+        }
+
+        // 2. Prepare form data for your backend API
+        const grievanceData = {
+            title,
+            description,
+            photo: photoUrl, // Send the URL instead of the file
+        };
+
+        // 3. Send data to your backend API
         const response = await fetch('/api/grievances', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(grievanceData)
         });
         
         const result = await response.json();
