@@ -105,8 +105,8 @@ async function handlePasscodeSubmit(e) {
         if (user && user.username) {
             sessionStorage.setItem('authenticated', 'true');
             sessionStorage.setItem('username', user.username); // Store the username string
+            initializeFirebase(); // Initialize Firebase before showing the main screen
             showMainScreen();
-            initializeFirebase(); // Initialize Firebase after login
             passcodeInput.value = '';
             passcodeError.classList.remove('show');
         } else {

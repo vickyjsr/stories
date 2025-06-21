@@ -75,11 +75,7 @@ jobs:
           };
           
           // Debug information
-          console.log('🔥 Firebase Config Loaded:', {
-              domain: window.location.hostname,
-              projectId: window.firebaseConfig.projectId,
-              timestamp: new Date().toISOString()
-          });
+          console.log('🔥 Firebase Config Loaded:');
           
           // Add error handling for Firebase initialization
           window.addEventListener('error', function(e) {
