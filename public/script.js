@@ -1,5 +1,5 @@
 // Initialize Socket.IO
-const socket = io();
+// const socket = io(); // Removed as it's not used in a static setup
 
 // DOM Elements
 const passcodeScreen = document.getElementById('passcodeScreen');
@@ -31,8 +31,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if already authenticated (simple session check)
     const isAuth = sessionStorage.getItem('authenticated');
     if (isAuth === 'true') {
-        showMainScreen();
-        initializeFirebase();
+        initializeFirebase(); // Initialize first
+        showMainScreen(); // Then show screen
     }
     
     // Load stories
@@ -47,6 +47,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize Firebase
 function initializeFirebase() {
+    if (firebase.apps.length) {
+        db = firebase.firestore();
+        storage = firebase.storage();
+        return; // Already initialized
+    }
     if (window.firebase && window.firebaseConfig) {
         // Initialize Firebase
         firebase.initializeApp(window.firebaseConfig);
@@ -76,9 +81,6 @@ function setupEventListeners() {
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
-    
-    // Socket events
-    socket.on('newStory', handleNewStory);
     
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -211,17 +213,6 @@ function handleFileSelect(e) {
         `;
     };
     reader.readAsDataURL(file);
-}
-
-// Handle new story from socket
-function handleNewStory(story) {
-    stories.unshift(story);
-    renderStories();
-    
-    // Show notification if not on view tab
-    if (!document.getElementById('viewTab').classList.contains('active')) {
-        showNotification('New story received!');
-    }
 }
 
 // Load stories from Firestore
