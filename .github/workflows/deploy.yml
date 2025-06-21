@@ -88,6 +88,8 @@ jobs:
           });
           EOF
           echo "✅ Firebase config generated successfully with debugging"
+          echo "🔍 Verifying generated firebase-config.js:"
+          cat public/firebase-config.js
           
       - name: Setup Pages
         uses: actions/configure-pages@v5
