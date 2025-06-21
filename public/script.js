@@ -8,8 +8,8 @@ const passcodeForm = document.getElementById('passcodeForm');
 const passcodeInput = document.getElementById('passcodeInput');
 const passcodeError = document.getElementById('passcodeError');
 const logoutBtn = document.getElementById('logoutBtn');
-const grievanceForm = document.getElementById('grievanceForm');
-const grievancesList = document.getElementById('grievancesList');
+const storyForm = document.getElementById('storyForm');
+const storiesList = document.getElementById('storiesList');
 const successModal = document.getElementById('successModal');
 const loadingSpinner = document.getElementById('loadingSpinner');
 const fileInput = document.getElementById('photo');
@@ -21,7 +21,7 @@ const tabContents = document.querySelectorAll('.tab-content');
 
 // State
 let isAuthenticated = false;
-let grievances = [];
+let stories = [];
 
 // Firebase references
 let db, storage;
@@ -35,8 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeFirebase();
     }
     
-    // Load grievances
-    loadGrievances();
+    // Load stories
+    // loadStories(); // Will be called when switching tab or after login
     
     // Setup event listeners
     setupEventListeners();
@@ -66,8 +66,8 @@ function setupEventListeners() {
     // Logout button
     logoutBtn.addEventListener('click', handleLogout);
     
-    // Grievance form
-    grievanceForm.addEventListener('submit', handleGrievanceSubmit);
+    // Story form
+    storyForm.addEventListener('submit', handleStorySubmit);
     
     // File input
     fileInput.addEventListener('change', handleFileSelect);
@@ -78,7 +78,7 @@ function setupEventListeners() {
     });
     
     // Socket events
-    socket.on('newGrievance', handleNewGrievance);
+    socket.on('newStory', handleNewStory);
     
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -98,30 +98,25 @@ async function handlePasscodeSubmit(e) {
     showLoading();
     
     try {
-        const response = await fetch('/api/verify-passcode', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ passcode })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
+        // Client-side passcode check
+        const passcodes = window.firebaseConfig.passcode || {};
+        const user = passcodes[passcode];
+
+        if (user && user.username) {
             sessionStorage.setItem('authenticated', 'true');
+            sessionStorage.setItem('username', user.username); // Store the username string
             showMainScreen();
-            initializeFirebase();
+            initializeFirebase(); // Initialize Firebase after login
             passcodeInput.value = '';
             passcodeError.classList.remove('show');
         } else {
-            showError(result.message || 'Invalid passcode');
+            showError('Invalid passcode');
             passcodeInput.value = '';
             passcodeInput.focus();
         }
     } catch (error) {
         console.error('Passcode verification error:', error);
-        showError('Connection error. Please try again.');
+        showError('An unexpected error occurred.');
     } finally {
         hideLoading();
     }
@@ -134,50 +129,52 @@ function handleLogout() {
     showPasscodeScreen();
 }
 
-// Handle grievance submission
-async function handleGrievanceSubmit(e) {
+// Handle story submission
+async function handleStorySubmit(e) {
     e.preventDefault();
     
     showLoading();
 
+    const name = sessionStorage.getItem('username');
+    if (!name) {
+        alert('Could not find user information. Please log in again.');
+        hideLoading();
+        return;
+    }
+
     const title = document.getElementById('title').value.trim();
     const description = document.getElementById('description').value.trim();
     const file = fileInput.files[0];
-
     let photoUrl = '';
 
     try {
-        // 1. If there's a file, upload it to Firebase Storage first
         if (file) {
-            const filePath = `Preeti/${Date.now()}_${file.name}`;
+            const filePath = `Preeti/${name}/${Date.now()}_${file.name}`;
             const storageRef = storage.ref(filePath);
             const uploadTask = await storageRef.put(file);
             photoUrl = await uploadTask.ref.getDownloadURL();
         }
 
-        // 2. Save the story data to Firestore
         await db.collection("stories").add({
+            name: name,
             title: title,
             description: description,
             photo: photoUrl,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        // Reset form
-        grievanceForm.reset();
+        storyForm.reset();
         filePreview.innerHTML = '';
         
-        // Show success modal
         showSuccessModal();
         
-        // Switch to view tab
         setTimeout(() => {
             switchTab('view');
         }, 2000);
 
     } catch (error) {
-        console.error('Grievance submission error:', error);
-        alert('Error submitting grievance: ' + error.message);
+        console.error('Story submission error:', error);
+        alert('Error submitting story: ' + error.message);
     } finally {
         hideLoading();
     }
@@ -216,57 +213,62 @@ function handleFileSelect(e) {
     reader.readAsDataURL(file);
 }
 
-// Handle new grievance from socket
-function handleNewGrievance(grievance) {
-    grievances.unshift(grievance);
-    renderGrievances();
+// Handle new story from socket
+function handleNewStory(story) {
+    stories.unshift(story);
+    renderStories();
     
     // Show notification if not on view tab
     if (!document.getElementById('viewTab').classList.contains('active')) {
-        showNotification('New grievance received!');
+        showNotification('New story received!');
     }
 }
 
-// Load grievances from server
-async function loadGrievances() {
+// Load stories from Firestore
+async function loadStories() {
+    if (!db) {
+        console.log("Firestore not initialized, skipping loading stories.");
+        return;
+    }
     try {
-        const response = await fetch('/api/grievances');
-        grievances = await response.json();
-        renderGrievances();
+        const snapshot = await db.collection("stories").orderBy("timestamp", "desc").get();
+        stories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderStories();
     } catch (error) {
-        console.error('Error loading grievances:', error);
+        console.error('Error loading stories:', error);
     }
 }
 
-// Render grievances
-function renderGrievances() {
-    if (grievances.length === 0) {
-        grievancesList.innerHTML = `
+// Render stories
+function renderStories() {
+    if (stories.length === 0) {
+        storiesList.innerHTML = `
             <div style="text-align: center; padding: 40px; color: #666;">
                 <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.5;"></i>
-                <p>No grievances yet.</p>
+                <p>No stories yet.</p>
             </div>
         `;
         return;
     }
     
-    grievancesList.innerHTML = grievances.map(grievance => `
-        <div class="grievance-item">
-            <div class="grievance-header">
-                <h3 class="grievance-title">${escapeHtml(grievance.title)}</h3>
-                <span class="grievance-status">${escapeHtml(grievance.status)}</span>
+    storiesList.innerHTML = stories.map(story => `
+        <div class="story-item">
+            <div class="story-header">
+                <h3 class="story-title">${escapeHtml(story.title)}</h3>
+                <span class="story-author">by ${escapeHtml(story.name || 'Anonymous')}</span>
             </div>
-            <div class="grievance-description">
-                ${escapeHtml(grievance.description)}
+            <div class="story-description">
+                ${escapeHtml(story.description)}
             </div>
-            ${grievance.photo ? `
-                <div class="grievance-photo">
-                    <img src="${grievance.photo}" alt="Grievance photo" onclick="showImageModal('${grievance.photo}')">
+            ${story.photo ? `
+                <div class="story-photo">
+                    <img src="${story.photo}" alt="Story photo" onclick="showImageModal('${story.photo}')">
                 </div>
             ` : ''}
-            <div class="grievance-meta">
-                <span><i class="fas fa-calendar"></i> ${formatDate(grievance.timestamp)}</span>
-                <span><i class="fas fa-clock"></i> ${formatTime(grievance.timestamp)}</span>
+            <div class="story-meta">
+                <span><i class="fas fa-user-circle"></i> ${escapeHtml(story.name || 'Anonymous')}</span>
+                <span><i class="fas fa-calendar"></i> ${formatDate(story.timestamp)}</span>
+                <span><i class="fas fa-clock"></i> ${formatTime(story.timestamp)}</span>
             </div>
         </div>
     `).join('');
@@ -274,17 +276,15 @@ function renderGrievances() {
 
 // Switch tabs
 function switchTab(tabName) {
-    // Update tab buttons
     tabBtns.forEach(btn => btn.classList.remove('active'));
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    
-    // Update tab content
     tabContents.forEach(content => content.classList.remove('active'));
+    
+    document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add('active');
     document.getElementById(`${tabName}Tab`).classList.add('active');
     
-    // Reload grievances if switching to view tab
+    // Reload stories if switching to view tab
     if (tabName === 'view') {
-        loadGrievances();
+        loadStories();
     }
 }
 
@@ -299,7 +299,7 @@ function showMainScreen() {
     passcodeScreen.classList.remove('active');
     mainScreen.classList.add('active');
     isAuthenticated = true;
-    loadGrievances();
+    loadStories(); // Load stories after login
 }
 
 // Error handling
@@ -405,17 +405,17 @@ function escapeHtml(text) {
 }
 
 function formatDate(timestamp) {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
+    if (!timestamp) return 'Just now';
+    return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US', {
         year: 'numeric',
-        month: 'short',
+        month: 'long',
         day: 'numeric'
     });
 }
 
 function formatTime(timestamp) {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
+    if (!timestamp) return '';
+    return new Date(timestamp.seconds * 1000).toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit'
     });
