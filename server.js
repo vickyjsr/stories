@@ -12,8 +12,15 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: [
+      "http://localhost:8080",
+      "http://localhost:3000",
+      "https://vickyjsr.github.io",
+      "https://conferenceapp-5753e.firebaseapp.com",
+      "https://conferenceapp-5753e.web.app"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -21,7 +28,16 @@ const PORT = process.env.PORT || 3000;
 const PASSCODE = "1805"; // Simple passcode for access
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:8080",
+    "http://localhost:3000",
+    "https://vickyjsr.github.io",
+    "https://conferenceapp-5753e.firebaseapp.com",
+    "https://conferenceapp-5753e.web.app"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
