@@ -158,7 +158,7 @@ async function validatePasscode(inputPasscode) {
             collection(db, 'passcodes'), 
             where('passcode', '==', inputPasscode)
         );
-        
+
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {

@@ -24,7 +24,8 @@ let isAuthenticated = false;
 let stories = [];
 let currentUser = null;
 
-// Firebase references are now global (window.db, window.storage)
+// Firebase references
+let db, storage;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
@@ -32,11 +33,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const isAuth = sessionStorage.getItem('authenticated');
     const userName = sessionStorage.getItem('userName');
     if (isAuth === 'true' && userName) {
-        isAuthenticated = true;
         currentUser = { name: userName };
         showMainScreen();
-    } else {
-        showPasscodeScreen();
+        initializeFirebase();
     }
     
     // Setup event listeners
@@ -45,6 +44,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start background animation
     animateBackground();
 });
+
+// Initialize Firebase
+function initializeFirebase() {
+    if (window.firebase && window.firebaseConfig) {
+        // Initialize Firebase
+        firebase.initializeApp(window.firebaseConfig);
+        db = firebase.firestore();
+        storage = firebase.storage();
+        console.log("Firebase initialized successfully");
+    } else {
+        console.error("Firebase config not found. Make sure firebase-config.js is loaded and configured.");
+    }
+}
 
 // Setup Event Listeners
 function setupEventListeners() {
@@ -86,28 +98,32 @@ async function handlePasscodeSubmit(e) {
     showLoading();
     
     try {
-        const passcodeDoc = await db.collection('passcodes').doc(passcode).get();
-
-        if (passcodeDoc.exists) {
-            const user = passcodeDoc.data();
-            
-            // Sign in anonymously to Firebase for security rules
-            await auth.signInAnonymously();
-
+        const response = await fetch('/api/verify-passcode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ passcode })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.user) {
             sessionStorage.setItem('authenticated', 'true');
-            sessionStorage.setItem('userName', user.name);
-            currentUser = { name: user.name };
+            sessionStorage.setItem('userName', result.user.name);
+            currentUser = result.user;
             showMainScreen();
+            initializeFirebase();
             passcodeInput.value = '';
             passcodeError.classList.remove('show');
         } else {
-            showError('Invalid passcode');
+            showError(result.message || 'Invalid passcode');
             passcodeInput.value = '';
             passcodeInput.focus();
         }
     } catch (error) {
         console.error('Passcode verification error:', error);
-        showError('Error verifying passcode. Please try again.');
+        showError('Connection error. Please try again.');
     } finally {
         hideLoading();
     }
@@ -115,7 +131,6 @@ async function handlePasscodeSubmit(e) {
 
 // Handle logout
 function handleLogout() {
-    auth.signOut(); // Sign out from Firebase
     sessionStorage.removeItem('authenticated');
     sessionStorage.removeItem('userName');
     isAuthenticated = false;
@@ -225,9 +240,8 @@ function handleNewStory(story) {
 
 // Load stories from server
 async function loadStories() {
-    if (!isAuthenticated || !db) {
-        console.log("User not authenticated or Firestore not initialized. Aborting story load.");
-        handleLogout();
+    if (!db) {
+        console.log("Firestore not initialized, skipping loading stories.");
         return;
     }
     try {
@@ -275,11 +289,6 @@ function renderStories() {
 
 // Switch tabs
 function switchTab(tabName) {
-    if (!isAuthenticated) {
-        console.error("Attempted to switch tab while not authenticated.");
-        handleLogout();
-        return;
-    }
     // Hide all tabs
     tabContents.forEach(content => content.classList.remove('active'));
     tabBtns.forEach(btn => btn.classList.remove('active'));
@@ -296,9 +305,9 @@ function switchTab(tabName) {
 
 // Screen management
 function showPasscodeScreen() {
-    isAuthenticated = false;
-    mainScreen.classList.remove('active');
     passcodeScreen.classList.add('active');
+    mainScreen.classList.remove('active');
+    setTimeout(() => passcodeInput.focus(), 100);
 }
 
 function showMainScreen() {
