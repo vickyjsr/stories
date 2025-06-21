@@ -29,13 +29,14 @@ let db, storage;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
+    initializeFirebase(); // Initialize immediately
+
     // Check if already authenticated (simple session check)
     const isAuth = sessionStorage.getItem('authenticated');
     const userName = sessionStorage.getItem('userName');
     if (isAuth === 'true' && userName) {
         isAuthenticated = true;
         currentUser = { name: userName };
-        initializeFirebase();
         showMainScreen();
     } else {
         showPasscodeScreen();
@@ -101,32 +102,24 @@ async function handlePasscodeSubmit(e) {
     showLoading();
     
     try {
-        const response = await fetch('/api/verify-passcode', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ passcode })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success && result.user) {
+        const passcodeDoc = await db.collection('passcodes').doc(passcode).get();
+
+        if (passcodeDoc.exists) {
+            const user = passcodeDoc.data();
             sessionStorage.setItem('authenticated', 'true');
-            sessionStorage.setItem('userName', result.user.name);
-            currentUser = result.user;
+            sessionStorage.setItem('userName', user.name);
+            currentUser = { name: user.name };
             showMainScreen();
-            initializeFirebase();
             passcodeInput.value = '';
             passcodeError.classList.remove('show');
         } else {
-            showError(result.message || 'Invalid passcode');
+            showError('Invalid passcode');
             passcodeInput.value = '';
             passcodeInput.focus();
         }
     } catch (error) {
         console.error('Passcode verification error:', error);
-        showError('Connection error. Please try again.');
+        showError('Error verifying passcode. Please try again.');
     } finally {
         hideLoading();
     }
